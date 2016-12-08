@@ -76,18 +76,35 @@ subroutine adjacency_list(qnet,enet,alist1,alist2)
 	integer, dimension(size(enet,1)*2), intent(out) :: alist1
 	integer, dimension(size(qnet)), intent(out) :: alist2
 	integer :: i1,tempalist2
+	integer :: totalNumberOfNodes
+	
+	totalNumberOfNodes = size(qnet)
 	
 	!creation of list 2
 	tempalist2 = 1
 	alist(1) = tempalist2
 	
-	do i1 = 2,size(qnet)
+	do i1 = 2,totalNumberOfNodes
             tempalist2 = tempalist2 + qnet(i-1)
             alist(i) = tempalist2
 	end do
 	
-
-        	
+        DO i1 = 2,totalNumberOfNodes-1 
+            alist2[alist1[i1]] = i1-1
+            alist2[alist1[i1]+1] = i1+1
+        END DO
+        
+        alist2[1] = 2
+        alist2[2] = totalNumberOfNodes
+        
+        alist2[totalNumberOfNodes-1] = totalNumberOfNodes - 1
+        alist2[totalNumberOfNodes+1] = 1
+        
+        
+        
+        
+        
+        
 	
 end subroutine adjacency_list
 
