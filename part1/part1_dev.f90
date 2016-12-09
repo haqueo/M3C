@@ -15,17 +15,17 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !N0,L,Nt: recursive network parameters
     !Output: X, m random walks on network each with Ntime steps from initial node, X0
     !XM: fraction of walks at initial node, computed every isample timesteps
-	implicit none
+    implicit none
     integer, intent(in) :: Ntime,Nm,N0,L,Nt,X0,isample
     integer, dimension(Ntime+1,Nm), intent(out) :: X,XM
-    integer :: i1,qmax, node,lowerBound,upperBound,degNode,increment, counter,j
+    integer :: i1,qmax, node,lowerBound,upperBound,degNode, counter,j
     integer, dimension(N0+Nt) :: qnet
     integer, dimension(N0+L*Nt,2) :: enet
-    integer, dimension((N0+L*Nt)*2) :: alist1
-    integer, dimension(N0+Nt) :: alist2
-    real(kind=8) :: u,current
+    integer, dimension(size(enet,1)*2) :: alist1
+    integer, dimension(size(qnet)) :: alist2
+    real(kind=8) :: u,current, increment
 
-    
+    print *, "I got here"
      
     
     !A walker is at node Xi at time, ti
@@ -47,25 +47,37 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !convert qnet, enet into alist1, alist2
     call adjacency_list(qnet,enet,alist1,alist2)
     
-    !Define the initial node
-    node = X0
-    IF (node .eq. 0) THEN
-        do i1 = 1, N0+Nt
-            if (qnet(i1) .eq. qmax) then
-                node = i1
-                exit
-            end if
-        end do 
-    END IF
+    
     
     !complete a single walk
     
     !initialise first row of X
-    X(1,:) = node
+    
+    print *, "alist1 is", alist1
+    print *, "alist2 is", alist2
+        
+        
+        
+    
+    
     
     DO j = 1,Nm
     
     
+    
+    
+    node = X0
+        IF (node .eq. 0) THEN
+            DO i1 = 1,N0+Nt
+                IF (qnet(i1) .eq. qmax) THEN
+                    node = i1
+                    EXIT
+                end IF
+            END DO
+        END IF
+        X(1,j) = node
+        !Define the initial node
+      
         DO i1 = 1,Ntime
             !!!GIVEN SUBLIST FUNCTION(node) !!!!
             
@@ -75,22 +87,27 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             !!unless node is the final node. then it's alist1(node) till 
             !the last value of alist2
             
-            lowerBound = alist1(node)
+            lowerBound = alist2(node)
             
             
             IF (node .eq. N0+NT) THEN
-                    upperBound = size(alist2) ! <- we know what this size is
+                    upperBound = size(alist1)+1 ! <- we know what this size is
             ELSE 
-                    upperBound = alist1(node+1)
+                    upperBound = alist2(node+1)
             END IF
             
             
             !now we have our sublist.
             
-            degNode = size(alist2(lowerBound:upperBound))
+            print *, "lowerBound is", lowerBound
+            print *, "upperBound is", upperBound
+            print *, "node is (before increment)", node
+            degNode = upperBound-lowerBound
             increment = dble(1)/(dble(degNode))
             
             call random_number(u)
+            print *, "u is", u
+            print *, "increment is", increment
             counter = 0
             current = 0
             
@@ -101,7 +118,10 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
                 
             END DO
             
-            node = alist2(lowerBound + counter -1)
+            
+            
+            node = alist1(lowerBound + counter -1)
+            print *, "node is (before attachment)", node
             !this is the next node
             !so add it to 
             
@@ -109,11 +129,12 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
         
         
         END DO
+        print *, "end of loop"
         
     END DO
     
     
-
+    XM(:,:) = 0
 
 end subroutine rwnet
 
