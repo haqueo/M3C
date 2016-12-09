@@ -18,6 +18,22 @@ subroutine rwnet(Ntime,m,X0,N0,L,Nt,isample,X,XM)
 	implicit none
     integer, intent(in) :: Ntime,Nm,N0,L,Nt,X0,isample
     integer, dimension(Ntime+1,Nm), intent(out) :: X
+    integer :: i1,qmax
+    integer, dimension(N0+Nt) :: qnet
+    integer, dimension(N0+L*Nt,2) :: enet 
+    
+    !A walker is at node Xi at time, ti
+    !at time ti+1 it will move to one of the adjacent nodes
+    
+    !If X0 = 0, the random walks should begin at the node with the 
+    !highest degree
+    
+    !XM(t) is the fraction of walkers that are at the initial node.
+    
+    !add code to compute XM every isample time steps
+    
+    call generate(N0,L,Nt,qmax,qnet,enet)
+    
 
 
 end subroutine rwnet

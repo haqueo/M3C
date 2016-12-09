@@ -91,37 +91,40 @@ subroutine adjacency_list(qnet,enet,alist1,alist2)
 	
 	
 	
-	
 	!!!!!! CREATION OF ALIST1 !!!!!!!!!!!!
 	
 	alist1(:) = -1
 	
-	print *, "I got here"
-	
+
 	DO i1 = 1,size(enet,1)
+	!each i1 here is a row of enet
+	
             firstNumber = enet(i1,1)
             secondNumber = enet(i1,2)
             
             !connect first to second
-            k = alist2(firstNumber)
-            tempNode = alist1(k)
-            
-            DO while (tempNode .GT. 0)
-                k = k+1
+                k = alist2(firstNumber)
                 tempNode = alist1(k)
-            END DO
-            
-            alist1(k) = secondNumber
+                
+                DO while (tempNode .GT. 0)
+                    k = k+1
+                    tempNode = alist1(k)
+                END DO
+                !we are at the first non negative entry
+                !in the possible values in the sublist for the first number
+                
+                alist1(k) = secondNumber
             
             !connect second to first
-            k = alist2(secondNumber)
-            tempNode = alist1(k)
-            
-            DO WHILE (tempNode .GT. 0)
-                k = k+1
+                k = alist2(secondNumber)
                 tempNode = alist1(k)
-            END DO
-            alist1(k) = firstNumber
+                
+                DO WHILE (tempNode .GT. 0)
+                    k = k+1
+                    tempNode = alist1(k)
+                END DO
+                
+                alist1(k) = firstNumber
 	END DO
 	
         
