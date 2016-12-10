@@ -17,8 +17,9 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !XM: fraction of walks at initial node, computed every isample timesteps
     implicit none
     integer, intent(in) :: Ntime,Nm,N0,L,Nt,X0,isample
-    integer, dimension(Ntime+1,Nm), intent(out) :: X,XM
-    integer :: i1,qmax, node,lowerBound,upperBound,degNode, counter,j
+    integer, dimension(Ntime+1,Nm), intent(out) :: X
+    real(kind=8), dimension((Ntime+1)/isample),intent(out) :: XM !<- check this is integer division
+    integer :: i1,qmax, node,lowerBound,upperBound,degNode, counter,j,initialNode
     integer, dimension(N0+Nt) :: qnet
     integer, dimension(N0+L*Nt,2) :: enet
     integer, dimension(size(enet,1)*2) :: alist1
@@ -46,11 +47,16 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !convert qnet, enet into alist1, alist2
     call adjacency_list(qnet,enet,alist1,alist2)
     
-
+    print *, "enet is", enet
     
-    DO j = 1,Nm
+    print *, "alist1 is", alist1
+    print *, "alist2 is", alist2
     
-    node = X0
+    
+    print *, "size of enet is", size(enet)
+    XM(:) = dble(0)
+    
+        node = X0
         IF (node .eq. 0) THEN
             DO i1 = 1,N0+Nt
                 IF (qnet(i1) .eq. qmax) THEN
@@ -59,8 +65,15 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
                 end IF
             END DO
         END IF
-        X(1,j) = node
+    
+    initialNode = node
+    DO j = 1,Nm
+    
+
+        X(1,j) = initialNode
         !Define the initial node
+        
+     node = initialNode
       
         DO i1 = 1,Ntime
             !!!GIVEN SUBLIST FUNCTION(node) !!!!
@@ -71,7 +84,9 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             !!unless node is the final node. then it's alist1(node) till 
             !the last value of alist2
             
+            
             lowerBound = alist2(node)
+            
             
             
             IF (node .eq. N0+NT) THEN
@@ -79,6 +94,7 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             ELSE 
                     upperBound = alist2(node+1)
             END IF
+            
             
             
             !now we have our sublist.
@@ -104,17 +120,37 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             
             node = alist1(lowerBound + counter -1)
             
+            print *, "node is", node
+            print *, "lowerBound is", lowerBound
+            print *, "upperBound is", upperBound
             
+            !ADD THE NODE TO X
             X(1+i1,j) = node
+            
+            !if this is i1 % isample = 0
+            !add this node to the counter for XM
+            IF (int(MOD(i1+1,isample)) .eq. 0) THEN
+              
+                    IF (node .eq. initialNode) THEN
+                     
+                        XM(i1) = XM(i1)+dble(1)
+                    END IF
+            END IF
         
         
         END DO
         
+        
+        
+        
+    END DO
+    
+    DO i1 = 1,size(XM)
+        XM(i1) = dble(XM(i1))/dble(i1*Nm*isample)
     END DO
     
     
-    XM(:,:) = 0
-
+    
 end subroutine rwnet
 
 
