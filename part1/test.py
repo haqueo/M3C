@@ -17,8 +17,8 @@ alist1, alist2 = network.adjacency_list(qnet,enet)
 Ntime = 10
 
 Nm = 5
-X0 = 2
-isample = 1
+X0 = 0
+isample = 3
 
 
 
