@@ -25,7 +25,6 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     integer, dimension(size(qnet)) :: alist2
     real(kind=8) :: u,current, increment
 
-    print *, "I got here"
      
     
     !A walker is at node Xi at time, ti
@@ -47,24 +46,9 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !convert qnet, enet into alist1, alist2
     call adjacency_list(qnet,enet,alist1,alist2)
     
-    
-    
-    !complete a single walk
-    
-    !initialise first row of X
-    
-    print *, "alist1 is", alist1
-    print *, "alist2 is", alist2
-        
-        
-        
-    
-    
+
     
     DO j = 1,Nm
-    
-    
-    
     
     node = X0
         IF (node .eq. 0) THEN
@@ -99,15 +83,14 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             
             !now we have our sublist.
             
-            print *, "lowerBound is", lowerBound
-            print *, "upperBound is", upperBound
-            print *, "node is (before increment)", node
+            
+            
             degNode = upperBound-lowerBound
             increment = dble(1)/(dble(degNode))
             
             call random_number(u)
-            print *, "u is", u
-            print *, "increment is", increment
+            
+            
             counter = 0
             current = 0
             
@@ -119,17 +102,13 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             END DO
             
             
-            
             node = alist1(lowerBound + counter -1)
-            print *, "node is (before attachment)", node
-            !this is the next node
-            !so add it to 
+            
             
             X(1+i1,j) = node
         
         
         END DO
-        print *, "end of loop"
         
     END DO
     
