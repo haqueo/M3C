@@ -14,24 +14,22 @@ alist1, alist2 = network.adjacency_list(qnet,enet)
 
 
 
-Ntime = 10
+Ntime = 100
 
-Nm = 5
+Nm = 100
 X0 = 0
 isample = 3
+numThreads = 4
 
 
-
-
-
-
-start1 = time.time()
-X,XM = rwmodule.rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,2)
-start2 = time.time()
-print start2-start1 
 
 
 start3 = time.time()
 Y,YM = rwmodule.rwnet(Ntime,Nm,X0,N0,L,Nt,isample)
 start4 = time.time()
-print start4-start3
+print("serial code takes %f" % (start4-start3))
+
+start1 = time.time()
+X,XM = rwmodule.rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numThreads)
+start2 = time.time()
+print ("parallelised code takes %f s" % (start2-start1))

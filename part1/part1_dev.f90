@@ -218,7 +218,7 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
     !we save this initial node for later.
     initialNode = node
     
-    !$OMP parallel do private(XMtemp,lowerBound,upperBound,node,degNode,increment,counter,current,u)
+    !$OMP parallel do private(XMtemp,lowerBound,upperBound,node,degNode,increment,counter,current,u,i1)
     DO j = 1,Nm
     
         !"for every column"
