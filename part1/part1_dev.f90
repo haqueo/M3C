@@ -19,7 +19,8 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     integer, intent(in) :: Ntime,Nm,N0,L,Nt,X0,isample
     integer, dimension(Ntime+1,Nm), intent(out) :: X
     real(kind=8), dimension((Ntime+1)/isample),intent(out) :: XM !<- check this is integer division
-    integer :: i1,qmax, node,lowerBound,upperBound,degNode, counter,j,initialNode
+    real(kind=8), dimension((Ntime+1)/isample) :: XMtemp !<- check this is integer division
+    integer :: i1,qmax, node,lowerBound,upperBound,degNode, counter,j,initialNode,initialCounter
     integer, dimension(N0+Nt) :: qnet
     integer, dimension(N0+L*Nt,2) :: enet
     integer, dimension(size(enet,1)*2) :: alist1
@@ -28,18 +29,6 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
 
      
     
-    !A walker is at node Xi at time, ti
-    !at time ti+1 it will move to one of the adjacent nodes
-    
-    !If X0 = 0, the random walks should begin at the node with the 
-    !highest degree
-    
-    !XM(t) is the fraction of walkers that are at the initial node.
-    
-    !add code to compute XM every isample time steps
-    
-    !find the index in qnet with value qmax
-    
     
     !generate the network
     call generate(N0,L,Nt,qmax,qnet,enet)
@@ -47,17 +36,19 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     !convert qnet, enet into alist1, alist2
     call adjacency_list(qnet,enet,alist1,alist2)
     
-    print *, "enet is", enet
-    
-    print *, "alist1 is", alist1
-    print *, "alist2 is", alist2
     
     
-    print *, "size of enet is", size(enet)
+    !initialise XM and XMtemp
     XM(:) = dble(0)
+    XMtemp(:) = dble(0)
     
+    !Find the initial node. 
         node = X0
+    !If the input is not zero then we just keep X0
         IF (node .eq. 0) THEN
+    !If it is zero then we need to find the node with highest degree
+    !We could use the inbuilt MAXLOC, but we already have qmax
+    !So there's no need to go further than an element with value qmax
             DO i1 = 1,N0+Nt
                 IF (qnet(i1) .eq. qmax) THEN
                     node = i1
@@ -65,29 +56,35 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
                 end IF
             END DO
         END IF
-    
+    !we save this initial node for later.
     initialNode = node
+    
+    
     DO j = 1,Nm
     
-
+        !"for every column"
+        !set the first value as initial node
         X(1,j) = initialNode
-        !Define the initial node
         
-     node = initialNode
+        
+        !we only need this to contribute to XM if isample is 1
+        IF (isample .eq. 1) THEN
+            XMtemp(1) = 1
+        END IF
+        
+        node = initialNode
+        
+        !iterate through the rest of the column
       
         DO i1 = 1,Ntime
-            !!!GIVEN SUBLIST FUNCTION(node) !!!!
-            
-            !! GENERATE THE SUBLIST!!!
-            !! lower bound is alist1(node) 
-            !! upper bound is alist2(node+1)
-            !!unless node is the final node. then it's alist1(node) till 
-            !the last value of alist2
             
             
+            !this is the lowerbound of possible values of X(i1+1)
             lowerBound = alist2(node)
             
             
+            !the upper bound is given by alist2(node+1)
+            !UNLESS, we're at the final node.
             
             IF (node .eq. N0+NT) THEN
                     upperBound = size(alist1)+1 ! <- we know what this size is
@@ -99,13 +96,29 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             
             !now we have our sublist.
             
+            !IDEA:
+            !we have a sublist of possible nodes we can go to
+            !sublist = [1,2,3,2,4], say.
+            !to randomise, we want the probabilities of hitting any number to
+            !be equal. So the Probability of hitting any of these numbers should
+            !be 1/5 (1/length(sublist))
+            !to generate from this list, we can consider having intervals of length
+            !0.2, corresponding to each number. The probability of a random uniform
+            !being in any of these intervals is therefore 1/5.
+            !but rather than computing all of the intervals, we just increment
+            !until we find the interval the uniform has landed in.
             
             
+            !initialise the degree of the Node and the increment (probability 
+            !of each interval)
             degNode = upperBound-lowerBound
             increment = dble(1)/(dble(degNode))
             
+            !generate the random uniform u
             call random_number(u)
             
+            !initialise counter and current. counter tells you which interval 
+            !you're in, and current tells you the current cumulative probability
             
             counter = 0
             current = 0
@@ -117,37 +130,38 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
                 
             END DO
             
+            !we're now at a place where current is greater than or equal to u
+            !so we're in the right interval. We can now add this node to X
             
             node = alist1(lowerBound + counter -1)
             
-            print *, "node is", node
-            print *, "lowerBound is", lowerBound
-            print *, "upperBound is", upperBound
             
             !ADD THE NODE TO X
             X(1+i1,j) = node
             
-            !if this is i1 % isample = 0
-            !add this node to the counter for XM
+           
+            
+            !if this is a multiple of isample, we need to check if it's an 
+            !initial node and add it to XM
+            
             IF (int(MOD(i1+1,isample)) .eq. 0) THEN
               
                     IF (node .eq. initialNode) THEN
                      
-                        XM(i1) = XM(i1)+dble(1)
+                        XMtemp((i1+1)/isample) = dble(1)
                     END IF
             END IF
         
         
         END DO
         
-        
+        XM = XM+XMtemp
+        XMtemp(:) = dble(0)
         
         
     END DO
     
-    DO i1 = 1,size(XM)
-        XM(i1) = dble(XM(i1))/dble(i1*Nm*isample)
-    END DO
+    XM = XM/dble(Nm)
     
     
     
