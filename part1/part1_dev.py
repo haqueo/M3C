@@ -11,6 +11,9 @@ def analyze_rnet(Ntime,m,X0,N0,L,Nt,display):
     	X0: initial node, (node with maximum degree if X0=0)
     	N0,L,Nt: recursive network parameters
     	"""
+    #The function, analyze_rnet should call rwnet or rwnet_omp and analyze the results. The routine should compute and return, F(t,n), the fraction of the m walkers at node n at time, t. When display is true, a figure should be created which plots the node with the greatest number of walkers at each step.
+
+
 
 
 

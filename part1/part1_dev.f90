@@ -26,7 +26,7 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
     integer, dimension(size(enet,1)*2) :: alist1
     integer, dimension(size(qnet)) :: alist2
     real(kind=8) :: u,current, increment
-
+    real(kind=8) :: t1,t2,initialisationTime,loopsTime
      
     
     
@@ -183,17 +183,17 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
     integer, dimension(size(enet,1)*2) :: alist1
     integer, dimension(size(qnet)) :: alist2
     real(kind=8) :: u,current, increment
+    real(kind=8) :: t1,t2,initialisationTime,loopsTime
 
 
     !$ call omp_set_num_threads(numThreads)
-    
+    call cpu_time(t1)
     !generate the network
     call generate(N0,L,Nt,qmax,qnet,enet)
     
     !convert qnet, enet into alist1, alist2
     call adjacency_list(qnet,enet,alist1,alist2)
-    
-    
+ 
     
     !initialise XM and XMtemp
     XM(:) = dble(0)
@@ -217,8 +217,11 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
         END IF
     !we save this initial node for later.
     initialNode = node
-    
-    !$OMP parallel do private(XMtemp,lowerBound,upperBound,node,degNode,increment,counter,current,u,i1)
+       call cpu_time(t2)
+    initialisationTime = t2-t1
+    call cpu_time(t1)
+    !$OMP parallel private(XMtemp,upperBound,node,increment,counter,current,u,i1)
+    !$OMP DO
     DO j = 1,Nm
     
         !"for every column"
@@ -239,7 +242,7 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
             
             
             !this is the lowerbound of possible values of X(i1+1)
-            lowerBound = alist2(node)
+             
             
             
             !the upper bound is given by alist2(node+1)
@@ -270,8 +273,8 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
             
             !initialise the degree of the Node and the increment (probability 
             !of each interval)
-            degNode = upperBound-lowerBound
-            increment = dble(1)/(dble(degNode))
+            
+            increment = dble(1)/(dble(upperBound-alist2(node)))
             
             !generate the random uniform u
             call random_number(u)
@@ -292,7 +295,7 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
             !we're now at a place where current is greater than or equal to u
             !so we're in the right interval. We can now add this node to X
             
-            node = alist1(lowerBound + counter -1)
+            node = alist1(alist2(node) + counter -1)
             
             
             !ADD THE NODE TO X
@@ -319,10 +322,14 @@ subroutine rwnet_omp(Ntime,Nm,X0,N0,L,Nt,isample,numthreads,X,XM)
         
         
     END DO
-    !$OMP end parallel do
+    !$OMP end DO
+    !$OMP end parallel
+       call cpu_time(t2)
+    loopsTime = t2-t1
     
     XM = XM/dble(Nm)
-
+    print *, "initialisation time is ", initialisationTime
+    print *, "loop time is", loopsTime
 
 
 end subroutine rwnet_omp
