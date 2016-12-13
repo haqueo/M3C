@@ -91,10 +91,11 @@ if __name__ == '__main__':
     N0,L,Nt = (5,2,200)
     
     #convergence_rnet(Ntime,m,X0,N0,L,Nt,display)
-    Ntime,m = 1000,1000
+    Ntime,m = 1000,100
     X0 = 0
-    
-    analyze_rnet(Ntime,m,X0,N0,L,Nt,True)
+    display = True
+    convergence_rnet(Ntime,m,X0,N0,L,Nt,display)    
+    #analyze_rnet(Ntime,m,X0,N0,L,Nt,True)
     #second part
     
     
