@@ -80,16 +80,20 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             
             
             !this is the lowerbound of possible values of X(i1+1)
-            lowerBound = alist2(node)
+            
             
             
             !the upper bound is given by alist2(node+1)
             !UNLESS, we're at the final node.
             
             IF (node .eq. N0+NT) THEN
-                    upperBound = size(alist1)+1 ! <- we know what this size is
+                    !upperBound = size(alist1)+1 ! <- we know what this size is
+                    !degNode = (2*(N0+(L*Nt)))+1-alist2(node)
+                    increment = dble(1)/dble((2*(N0+(L*Nt)))+1-alist2(node))
             ELSE 
-                    upperBound = alist2(node+1)
+                    !upperBound = alist2(node+1)
+                    !degNode = alist2(node+1)-alist2(node)
+                    increment = dble(1)/dble(alist2(node+1)-alist2(node))
             END IF
             
             
@@ -111,8 +115,8 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             
             !initialise the degree of the Node and the increment (probability 
             !of each interval)
-            degNode = upperBound-lowerBound
-            increment = dble(1)/(dble(degNode))
+            !degNode = upperBound-alist2(node)
+            !increment = dble(1)/(dble(degNode))
             
             !generate the random uniform u
             call random_number(u)
@@ -133,7 +137,7 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
             !we're now at a place where current is greater than or equal to u
             !so we're in the right interval. We can now add this node to X
             
-            node = alist1(lowerBound + counter -1)
+            node = alist1(alist2(node) + counter -1)
             
             
             !ADD THE NODE TO X
