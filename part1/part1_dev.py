@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from networktest import network
 from rwnettest import rwmodule 
+
 
 
 
@@ -29,7 +31,8 @@ def analyze_rnet(Ntime, m, X0, N0, L, Nt, display):
     	Output: Fprime - an (Ntime+1)x(N0+Nt) matrix
     	where Fprime[t-1,n-1] = F(t,n) from the question
     	"""
-    X,XM = rwmodule.rwnet(Ntime,m,X0,N0,L,Nt,Ntime)
+    Y = rwmodule.rwnet(Ntime,m,X0,N0,L,Nt,Ntime)
+    X = Y[0]
     Fprime = np.zeros((Ntime+1,N0+Nt))
     
     for i in range(Ntime+1):
@@ -38,37 +41,60 @@ def analyze_rnet(Ntime, m, X0, N0, L, Nt, display):
             float(counter(j+1,X[i,:])) \
             /float(m)
             
-    print Fprime
-            
+    if display == True:
+        time = range(1,Ntime+2)
+        maxArray = np.zeros(Ntime+1)
+        for i in range(Ntime+1):
+            maxArray[i] = int(np.argmax(Fprime[i,:])+1)
+        
+        plt.figure()
+        plt.xlabel('t')
+        plt.ylabel('node with greatest number of walkers')
+        plt.title('The nodes with the greatest number of walkers at each step')
+        plt.xlim([0,Ntime+2])
+        plt.stem(time,maxArray)
+        plt.show()
+          
+    return Fprime
             
     
-            
-    print X
  
-    
-    
-    
-analyze_rnet(5,6,2,8,2,2,True)
-
-# The function, analyze_rnet should call rwnet or rwnet_omp and analyze the results.
-# The routine should compute and return, F(t,n), the fraction of the m walkers at node n at time, t. 
-# When display is true, a figure should be created which plots the node with the greatest number of walkers at each step.
-
-
-
-
-
 
 
 def convergence_rnet(Ntime, m, X0, N0, L, Nt, display):
     """Input variables:
-	Ntime: number of time steps
-    	m: number of walks
-    	X0: initial node, (node with maximum degree if X0=0)
-    	N0,L,Nt: recursive network parameters
-    	"""
+    Ntime: number of time steps
+    m: number of walks
+    X0: initial node, (node with maximum degree if X0=0)
+    N0,L,Nt: recursive network parameters
+    """
+    
+    Fprime = analyze_rnet(Ntime,m,X0,N0,L,Nt,False)
+    #F = F[Ntime,X0]
+    F = Fprime[Ntime-1,X0-1]
+    
+    Fprimevals = np.zeros(m)
+    for i in range(1,m+1):
+        Fprime = analyze_rnet(Ntime,i,X0,N0,L,Nt,False)
+        F = Fprime[Ntime-1,X0-1]
+        Fprimevals[i-1] = F
+    
+    plt.figure()
+    plt.plot(range(m),Fprimevals)
+    plt.show()
+    	
 
 
 if __name__ == '__main__':
     # add code here to call functions and generate figures
-    pass
+    #Ntime,m,X0,N0,L,Nt,display = (100,500,0,5,2,5,True)
+    N0,L,Nt = (5,2,200)
+    
+    #convergence_rnet(Ntime,m,X0,N0,L,Nt,display)
+    Ntime,m = 1000,1000
+    X0 = 0
+    
+    analyze_rnet(Ntime,m,X0,N0,L,Nt,True)
+    #second part
+    
+    
