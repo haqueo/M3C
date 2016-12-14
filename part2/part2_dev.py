@@ -79,6 +79,8 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         requires i, the index of the node being solved
         and N, the total number of nodes
         """
+        
+        #y is really the initial condition, this needs to change
         #Split initial conditions into S,E,C
         S = InitialConditions[0:N]
         E = InitialConditions[N:2*N]
