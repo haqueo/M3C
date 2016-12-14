@@ -58,7 +58,7 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,A)
     
     DO i = 1:n
         !dSi/dt 
-        dy(i) = k*(1-S(i))-(b*C(i)*S(i))-(w*S(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),S)) !the factor right at the end is what i discuss above
+        dy(i) = k*(1-S(i))-(b*C(i)*S(i))-(w*S(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),S)) !the factor right at the end is what I discuss above
         !dEi/dt
         dy(i+n) = (b*C(i)*S(i))-(k+a)*(E(i))-(w)*E(i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),E))
         !dCi/dt
@@ -72,6 +72,7 @@ end subroutine rhs
 
 
 subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
+    use omp_lib
     implicit none
     !Return RHS of network flu model, parallelized with OpenMP
     !input: 
@@ -90,7 +91,17 @@ subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
     integer :: i
     
     
-    
+    b = b0 + b1*(1.d0+cos(2.0*.pi*t))
+    !$OMP parallel do
+    DO i = 1:n
+        !dSi/dt 
+        dy(i) = k*(1-y(i))-(b*C(i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(1:n))) !the factor right at the end is what I discuss above
+        !dEi/dt
+        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+i)))
+        !dCi/dt
+        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+i)))
+    END DO
+    !$OMP end parallel do
 
 end subroutine rhs_omp
 
