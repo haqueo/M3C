@@ -53,16 +53,18 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,A)
     !                    = (1/dot_product(qnet,A(:,i))*(qnet*elementwisemultiplication*A(:,i))*dotproduct*S
     !similar for E,C.
     
-    
+    !S(i) = y(i)
+    !E(i) = y(n+i)
+    !C(i) = y((2*n)+i)
     
     
     DO i = 1:n
         !dSi/dt 
-        dy(i) = k*(1-S(i))-(b*C(i)*S(i))-(w*S(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),S)) !the factor right at the end is what I discuss above
+        dy(i) = k*(1-y(i))-(b*y((2*n)+i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(1:n))) !the factor right at the end is what I discuss above
         !dEi/dt
-        dy(i+n) = (b*C(i)*S(i))-(k+a)*(E(i))-(w)*E(i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),E))
+        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+1:2*n)))
         !dCi/dt
-        dy(i+(2*n)) = a*E(i)-(g+k)*C(i)-w*C(i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),C))
+        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+1:3*n)))
     END DO
     
     
@@ -89,7 +91,7 @@ subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
     real(kind=8), dimension(n),intent(in) :: qnet
     real(kind=8), dimension(n,n),intent(in) :: A
     integer :: i
-    
+    !$ call omp_set_num_threads(numThreads)    
     
     b = b0 + b1*(1.d0+cos(2.0*.pi*t))
     !$OMP parallel do
@@ -97,9 +99,9 @@ subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
         !dSi/dt 
         dy(i) = k*(1-y(i))-(b*C(i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(1:n))) !the factor right at the end is what I discuss above
         !dEi/dt
-        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+i)))
+        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+1:2*n)))
         !dCi/dt
-        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+i)))
+        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+1:3*n)))
     END DO
     !$OMP end parallel do
 
