@@ -23,8 +23,9 @@ def initialize(N0,L,Nt,pflag):
             break
             
     #Setup the initial conditions
-    InitialConditions = np.zeros((3*N,1))
-    InitialConditions[:N,0] = float(1)
+    InitialConditions = np.zeros((3*N,1)) #It is 3Nx1
+    InitialConditions[:N,0] = float(1) #first N are all 1, rest are 0
+    #apart from the infected node:
     InitialConditions[InfectedNode,0] = 0.1
     InitialConditions[InfectedNode+N,0] = 0.05
     InitialConditions[InfectedNode+2*N,0] = 0.05
@@ -57,35 +58,62 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         L - number of links added at each timestep
         Nt - total number of timesteps 
     """
-    InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
+    #there are N0+Nt nodes in total
     N = N0+Nt
     
+    #as given by the question, S,E and C are NtimexN
+    S_sol = np.zeros((Ntime,N))
+    E_sol = np.zeros((Ntime,N))
+    C_sol = np.zeros((Ntime,N))
+    
+    #Get the initial conditions
+    InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
+   
+    #Initialise the time
     t=np.linspace(0,T,Ntime)
     
     
     #add input variables to RHS functions if needed
-    def RHSnet(y,t,a,b0,b1,g,k,w,N,i):
+    def RHSnet(y,t,a,b0,b1,g,k,w,N,i,initialConditions):
         """RHS used by odeint to solve Flu model
         requires i, the index of the node being solved
         and N, the total number of nodes
         """
-        #Initialise initial conditions
-        S = y[0:N]
-        E = y[N:2*N]
-        C = y[(2*N):3*N]
+        #Split initial conditions into S,E,C
+        S = InitialConditions[0:N]
+        E = InitialConditions[N:2*N]
+        C = InitialConditions[(2*N):3*N]
         
-
+        
+        #beta (b) definition
         b = b0 + b1*(1.0+np.cos(2.0*np.pi*t))
         
-        dS = k*(1-S[i])-S[i]*((b*C[i])+w)+(w*(np.dot(S,P[:,i])))
-        dE = (b*C[i]*S[i]) - E[i]*(k+a+w)+(w*(np.dot(E,P[:,i])))
-        dC = (a*E[i])-(C[i]*(g+k+w))+(w*(np.dot(C,P[:,i])))
         
-        dy = dS, dE, dC
+        #Here I have expanded the sum within dS/dt, dE/dt and dC/dt given,
+        # and used the fact that the sum of Pij over i = 1
+        
+        dS = k*(1-S[i])- S[i]*((b*C[i])+w)+(w*(np.dot(S[:,0],P[:,i])))
+        dE = (b*C[i]*S[i]) - E[i]*(k+a+w)+(w*(np.dot(E[:,0],P[:,i])))
+        dC = (a*E[i])-(C[i]*(g+k+w))+(w*(np.dot(C[:,0],P[:,i])))
+        
+        #return dy
+        dy = [dS[0], dE[0], dC[0]]
+        
         return dy
+        
+    
     for i in range(N):
-        myInit = [InitialConditions[i],InitialConditions[N+i],InitialConditions[2*N+i]]    
-        Y = odeint(myInit,InitialConditions,t,args=(a,b0,b1,g,k,w,N,i))
+        myInit = InitialConditions[i][0],InitialConditions[N+i][0],InitialConditions[2*N+i][0]
+        #for each node, extract its initial condition (could use if statement dependent on if infectedNode or not, but still O(1)
+        
+        Y = odeint(RHSnet,myInit,t,args=(a,b0,b1,g,k,w,N,i,InitialConditions)) #i is the node under consideration
+        
+        S_sol[:,i] = Y[:,0]
+        E_sol[:,i] = Y[:,1]
+        C_sol[:,i] = Y[:,2]
+        
+    return S_sol,E_sol,C_sol
+    #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
         
     
@@ -109,6 +137,8 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
     #Add code here and to RHS functions above to simulate network flu model
 
     return t,S,E,C
+    
+
 
 
 def analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=False):
@@ -146,5 +176,6 @@ if __name__ == '__main__':
    InitialConditions, InfectedNode, P = initialize(5,2,3,True)
    #print(InitialConditions)
    #print(InfectedNode)
-   print(P)
+   S,E,C = solveFluNet(10,11,2,3,4,3,2,1,1,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
+   print(S)
    
