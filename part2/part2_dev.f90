@@ -6,7 +6,7 @@ module flunet
 	contains
 
 
-subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,A)
+subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
     implicit none
     !Return RHS of network flu model
     !input: 
@@ -19,16 +19,15 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,A)
     real(kind=8), dimension(n*3),intent(in) :: y
     real(kind=8), intent(in) :: t,a,b0,b1,g,k,w
     real(kind=8), dimension(n*3), intent(out) :: dy
-    real(kind=8), dimension(n) :: S,E,C
     integer :: i
     real(kind=8), dimension(n),intent(in) :: qnet
-    real(kind=8), dimension(n,n),intent(in) :: A
+    real(kind=8), dimension(n,n),intent(in) :: Anet
+    real(kind=8) :: b
+    !S = y(1:n)
+    !E = y(n+1:2*n)
+    !C = y((2*n)+1:3N)
     
-    S = y(1:n)
-    E = y(n+1:2*n)
-    C = y((2*n)+1:3N)
-    
-    b = b0 + b1*(1.d0+cos(2.0*.pi*t))
+    b = b0 + b1*(1.d0+cos(2.0*4.0*atan(1.0)*t))
     
     !need use P values without creating an NxN matrix
     
@@ -57,15 +56,20 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,A)
     !E(i) = y(n+i)
     !C(i) = y((2*n)+i)
     
-    
-    DO i = 1:n
-        !dSi/dt 
-        dy(i) = k*(1-y(i))-(b*y((2*n)+i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(1:n))) !the factor right at the end is what I discuss above
-        !dEi/dt
-        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+1:2*n)))
+   ! 
+   !this was my first approach, it's fast but it needs qnet and Anet separately
+   !which I can't get unless initialize returns them
+    !DO i = 1,n
+     !   !dSi/dt 
+      !  dy(i) = k*(1-y(i))-(b*y((2*n)+i)*y(i))-(w*y(i))+ &
+       ! & w*(1.d0/dble(dot_product(qnet,Anet(:,i))))*(dot_product(qnet*Anet(:,i),y(1:n)))
+        !!dEi/dt
+        !dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+ &
+        !& w*(1.d0/dble(dot_product(qnet,Anet(:,i))))*(dot_product(qnet*Anet(:,i),y(n+1:2*n)))
         !dCi/dt
-        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+1:3*n)))
-    END DO
+        !dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+&
+        !& w*(1.d0/dble(dot_product(qnet,Anet(:,i))))*(dot_product(qnet*Anet(:,i),y((2*n)+1:3*n)))
+!    END DO
     
     
 
@@ -73,8 +77,7 @@ end subroutine rhs
 
 
 
-subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
-    use omp_lib
+subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,Anet,dy)
     implicit none
     !Return RHS of network flu model, parallelized with OpenMP
     !input: 
@@ -89,24 +92,27 @@ subroutine rhs_omp(n,y,t,a,b0,b1,g,k,w,numthreads,qnet,A,dy)
     real(kind=8), intent(in) :: t,a,b0,b1,g,k,w
     real(kind=8), dimension(n*3), intent(out) :: dy
     real(kind=8), dimension(n),intent(in) :: qnet
-    real(kind=8), dimension(n,n),intent(in) :: A
-    integer :: i
+    real(kind=8), dimension(n,n),intent(in) :: Anet
+    real(kind=8) :: b
+    integer :: i,numThreads
     !$ call omp_set_num_threads(numThreads)    
     
-    b = b0 + b1*(1.d0+cos(2.0*.pi*t))
+    b = b0 + b1*(1.d0+cos(2.0*4.0*atan(1.0)*t))
     !$OMP parallel do
-    DO i = 1:n
+    DO i = 1,n
         !dSi/dt 
-        dy(i) = k*(1-y(i))-(b*C(i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(1:n))) !the factor right at the end is what I discuss above
+        dy(i) = k*(1-y(i))-(b*y((2*n)+i)*y(i))-(w*y(i))+w*(1.d0/dble(dot_product(qnet,Anet(:,i)))) &
+        & *(dot_product(qnet*Anet(:,i),y(1:n))) 
         !dEi/dt
-        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y(n+1:2*n)))
+        dy(i+n) = (b*y((2*n)+i)*y(i))-(k+a)*(y(n+i))-(w)*y(n+i)+&
+        & w*(1.d0/dble(dot_product(qnet,Anet(:,i))))*(dot_product(qnet*Anet(:,i),y(n+1:2*n)))
         !dCi/dt
-        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+w*(1.d0/dble(dot_product(qnet,A(:,i))))*(dot_product(qnet*A(:,i),y((2*n)+1:3*n)))
+        dy(i+(2*n)) = a*y(n+i)-(g+k)*y((2*n)+i)-w*y((2*n)+i)+ &
+        & w*(1.d0/dble(dot_product(qnet,Anet(:,i))))*(dot_product(qnet*Anet(:,i),y((2*n)+1:3*n)))
     END DO
     !$OMP end parallel do
 
-end subroutine rhs_omp
-
-
 
 end subroutine rhs_omp
+
+end module flunet
