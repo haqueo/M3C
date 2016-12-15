@@ -69,8 +69,6 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
     #there are N0+Nt nodes in total
     N = N0+Nt
     
-   
-    
     #Get the initial conditions
     InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
     
@@ -110,12 +108,12 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
             dyprime[i,0] = k*(1-S[i])- S[i]*((b*C[i])+w)+(w*(np.dot(S[:],P[:,i])))
             dyprime[i+N,0] = (b*C[i]*S[i]) - E[i]*(k+a+w)+(w*(np.dot(E[:],P[:,i]))) 
             dyprime[i+(2*N),0] = (a*E[i])-(C[i]*(g+k+w))+(w*(np.dot(C[:],P[:,i])))
-        
+            
         
         return dyprime[:,0]
     #def RHSnet(y,t,a,b0,b1,g,k,w,N,initialConditions,P):
     
-    Y = odeint(RHSnet,InitialConditions[:,0],t,args=(a,b0,b1,g,k,w,N,P)) 
+    
     
     #
     #for i in range(N):
@@ -128,7 +126,7 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
     #    E_sol[:,i] = Y[:,1]
     #    C_sol[:,i] = Y[:,2]
         
-    return Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
+    
     #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
         
@@ -136,17 +134,21 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
      
     
-    def RHSnetF(y,t,a,b0,b1,g,k,w):
+    def RHSnetF(y,t,a,b0,b1,g,k,w,N,P):
         """RHS used by odeint to solve Flu model"
         Calculations carried out by fn.rhs
         """
         
-        
-        # rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
-        dy = fn.rhs(N,InitialConditions,t,a,b0,b1,g,k,w,qnet,Anet)
+       
+        #!rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
+        dy = fn.rhs(InitialConditions,t,a,b0,b1,g,k,w,P,N)
+        #for some reason, this takes N as the last value?!
         
         return dy
         
+    Y = odeint(RHSnet,InitialConditions[:,0],t,args=(a,b0,b1,g,k,w,N,P)) 
+    return Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
+    
     def RHSnetFomp(y,t,a,b0,b1,g,k,w):
         """RHS used by odeint to solve Flu model
         Calculations carried out by fn.rhs_omp
@@ -197,5 +199,5 @@ if __name__ == '__main__':
    #print(InitialConditions)
    #print(InfectedNode)
    S,E,C = solveFluNet(10,11,2,3,4,3,2,1,1,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
-   print(S)
+   print(C)
    

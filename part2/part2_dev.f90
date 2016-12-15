@@ -6,7 +6,7 @@ module flunet
 	contains
 
 
-subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
+subroutine rhs(n,y,t,a,b0,b1,g,k,w,P,dy)
     implicit none
     !Return RHS of network flu model
     !input: 
@@ -18,16 +18,33 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
     integer, intent(in) :: n
     real(kind=8), dimension(n*3),intent(in) :: y
     real(kind=8), intent(in) :: t,a,b0,b1,g,k,w
-    real(kind=8), dimension(n*3), intent(out) :: dy
+    real(kind=8), dimension(n,n), intent(in) :: P
+    real(kind=8), dimension(3*n), intent(out) :: dy
     integer :: i
-    real(kind=8), dimension(n),intent(in) :: qnet
-    real(kind=8), dimension(n,n),intent(in) :: Anet
     real(kind=8) :: b
-    !S = y(1:n)
-    !E = y(n+1:2*n)
-    !C = y((2*n)+1:3N)
+    real(kind=8), dimension(n) :: S,E,C
+    
+    
+    
+    
+    S = y(1:n) ! S(i) = y(i)
+    E = y(n+1:2*n) ! E(i) = y(i+N)
+    C = y((2*n)+1:3*n) 
+    ! C(i) = y(i+(2*N))
     
     b = b0 + b1*(1.d0+cos(2.0*4.0*atan(1.0)*t))
+    !S[:] = y(1:n)
+    !E[:] = y(n+1:2*n)
+    !C[:] = y((2*n)+1:3*n)
+    
+    
+    print *, ""
+    
+    DO i = 1,N
+        dy(i) = k*(1-y(i)) - y(i)*((b*y(i+(2*N)))+w)+(w*(dot_product(y(1:n),P(:,i))))
+        dy(i+N) = (b*y(i+(2*N))*y(i)) - y(i+N)*(k+a+w)+(w*(dot_product(y(n+1:2*n),P(:,i)))) 
+        dy(i+(2*N)) = (a*y(i+N))-(y(i+(2*N))*(g+k+w))+(w*(dot_product(y((2*n)+1:3*n),P(:,i))))
+    END DO
     
     !need use P values without creating an NxN matrix
     
@@ -37,6 +54,8 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
     ! Considering we need qnet, A to make P anyway - (ii) is probably cheaper
     !but this still uses an NxN matrix..
     !yeah, this is cheaper since we can use vectorisation.
+    !no, there's no way to get qnet, and A without making initialize() return it :(
+    
     
     
     
@@ -72,6 +91,13 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
 !    END DO
     
     
+    !!! NEW APPROACH!!! 
+    !do exactly the same as in python
+    
+    
+
+
+
 
 end subroutine rhs
 
