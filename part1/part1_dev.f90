@@ -78,10 +78,7 @@ subroutine rwnet(Ntime,Nm,X0,N0,L,Nt,isample,X,XM)
       
         DO i1 = 1,Ntime
             
-            
             !this is the lowerbound of possible values of X(i1+1)
-            
-            
             
             !the upper bound is given by alist2(node+1)
             !UNLESS, we're at the final node.
