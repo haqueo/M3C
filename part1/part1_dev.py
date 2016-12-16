@@ -88,6 +88,7 @@ def convergence_rnet(Ntime, m, X0, N0, L, Nt, display):
     N0,L,Nt: recursive network parameters
     
     Plots a graph of m against the assosciated F(Ntime,X0)
+    for every 10 numbers, from 0 to m
     For large m, we can see how F(Ntime,X0) tails out and converges
     to a single value
     (but it takes a long time to run)
@@ -127,20 +128,25 @@ if __name__ == '__main__':
     # add code here to call functions and generate figures
     
     #FIRST GRAPH
-    #N0,L,Nt = (5,2,200)
-    #Ntime,m = 100000,1000
-    #X0 = 0
-    #display = True
-    #analyze_rnet(Ntime,m,X0,N0,L,Nt,display)
+    N0,L,Nt = (5,2,200)
+    Ntime,m = 100000,1000
+    X0 = 0
+    display = True
+    analyze_rnet(Ntime,m,X0,N0,L,Nt,display)
     
     #SECOND GRAPH
+    # I can't figure out a nice way to remove the 0's from the graph,
+    # but they can be ignored since i'm only using every 10th m
+    # If i made this more efficient and used the actual plot over 
+    #all m, the zeros wouldn't appear
     N0,L,Nt = (5,2,200)
     Ntime,m = 100000,500
     X0 = 0
     display = True
     convergence_rnet(Ntime,m,X0,N0,L,Nt,display)
-    
-    
+
+
+
     
     
     
