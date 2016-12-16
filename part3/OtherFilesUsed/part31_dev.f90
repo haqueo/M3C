@@ -35,7 +35,6 @@ subroutine rk4(t0,y0,dt,nt,y,order)
         y(:,1) = y0 !initial condition
         t = t0 !initial time
 
-        N = size(y0)
         do k = 1, nt !advance nt time steps
 
            f1 = dt*RHS(t, y(:,k))
@@ -51,7 +50,7 @@ subroutine rk4(t0,y0,dt,nt,y,order)
            t = t + dt
         
         !add code to compute order
-        
+        N = size(y0)
         sumSines = dble(0)
         sumCosines = dble(0)
         

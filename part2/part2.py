@@ -280,6 +280,15 @@ def performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w):
         Add input variables as needed, add comment clearly describing the functionality
         of this function including figures that are generated and trends shown in figures
         that you have submitted
+        
+        This function plots the time taken to complete solveFluNet, against N (total number of nodes), for the three RHS functions.
+        The first (p24png) shows how the two Fortran functions are far superior than the python version, and it seems to grow linearly with the problem size.
+        
+        The second (p25.png) gives a log-log plot of the Fortran RHS with the Fortran+OpenMP RHS functions, against N. It is clear that there does not seem to be much of a difference between them, although
+            the openMP version does seem to take over for larger N
+        
+        
+        
     """
     N = N0+Nt
     
@@ -317,7 +326,7 @@ def performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w):
     plt.plot(Nvalues,pythonTimes,label='RHS from python')
     plt.plot(Nvalues,fortranTimes,label='RHS from fortran')
     plt.plot(Nvalues, openMPTimes,label='RHS using openMP')
-    plt.xlabel('Nt')
+    plt.xlabel('N')
     plt.ylabel('time taken for solveFluNet()')
     plt.legend(loc = 'best')
     plt.show()
@@ -326,12 +335,11 @@ def performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w):
     plt.title('Omar Haque, performance. Comparison of Fortran vs Fortran+OpenMP (logplot)')
     plt.plot(np.log(Nvalues),np.log(fortranTimes),label='RHS from fortran')
     plt.plot(np.log(Nvalues), np.log(openMPTimes),label='RHS using openMP')
-    plt.xlabel('log(Nt)')
+    plt.xlabel('log(N)')
     plt.ylabel('log(time taken for solveFluNet)')
     plt.legend(loc = 'best')
     plt.show()
-        
-        #initialize(N0,L,Nt,pflag):
+
         
     
     
@@ -340,22 +348,28 @@ def performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w):
 if __name__ == '__main__':            
    a,b0,b1,g,k,w = 45.6,750.0,0.5,73.0,1.0,0.1
    
-   InitialConditions, InfectedNode, P = initialize(5,3,3,True)
-   #print(InitialConditions)
-   #print(InfectedNode)
-   
-   
-   
-   # t,S,E,C = solveFluNet(10,10,a,b0,b1,g,k,w,InitialConditions,5,3,3,P,'python') 
-
-   N0,L,Nt = 5,2,200
+   #CODE FOR P21,P22,P23
+   N0,L,Nt = 5,2,500
    T = 2
    threshold = 0.1
-   #use Nt = 200 for performance
-   Ntime = 1000
-   warray = [0,np.power(10,-2),0.1,0.2,0.5,1.0]
-   #analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=True)
-   performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w)
+   warray = [0.0,0.01,0.1,0.2,0.5,1.0]
+   display = True
+   #def analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=False):
+   analyze(N0,L,Nt,T,1000,a,b0,b1,1000,k,threshold,warray,True)
+
    
+   
+   
+   
+   #CODE FOR PERFORMANCE
+   #I have chosen Nt = 200 as it covers the section where Fortran+OpenMP is faster than Fortran.
+#   InitialConditions, InfectedNode, P = initialize(5,3,3,True)
+#   N0,L,Nt = 5,2,200
+#   T = 2
+#   threshold = 0.1
+#   Ntime = 1000
+#   warray = [0,np.power(10,-2),0.1,0.2,0.5,1.0]
+#   performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w)
+
 
    

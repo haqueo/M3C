@@ -31,4 +31,3 @@ if __name__ == '__main__':
     n,c,m,s = 101,10.0,1.0,0.1
     Nt,T = 500,100
     t,omega,theta0,theta,order = oscillator(Nt,T,n,c,s,m) #i swapped m and s
-    print(order)
