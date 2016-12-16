@@ -37,13 +37,13 @@ subroutine rk4(t0,y0,dt,nt,y,order)
 
         do k = 1, nt !advance nt time steps
 
-           f1 = dt*RHS(t, y)
+           f1 = dt*RHS(t, y(:,k))
 
-           f2 = dt*RHS(t + halfdt, y + 0.5d0*f1)
+           f2 = dt*RHS(t + halfdt, y(:,k) + 0.5d0*f1)
 
-           f3 = dt*RHS(t + halfdt, y + 0.5d0*f2)
+           f3 = dt*RHS(t + halfdt, y(:,k) + 0.5d0*f2)
 
-           f4 = dt*RHS(t + dt, y + f3)
+           f4 = dt*RHS(t + dt, y(:,k) + f3)
 
            y(:,k+1) = y(:,k) + (f1 + 2*f2  + 2*f3 + f4)*fac
 

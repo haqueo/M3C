@@ -1,7 +1,7 @@
 !-------------------------------
 module syncmodule
 	implicit none
-	complex(kind=16), parameter :: ii=cmplx(0.0,1.0) !ii = sqrt(-1)
+	complex(kind=8), parameter :: ii=cmplx(0.0,1.0) !ii = sqrt(-1)
     integer :: ntotal, a !total number of oscillators, 
 	real(kind=8) :: c,mu,sigma !coupling coefficient, mean, std
 	save
@@ -70,9 +70,6 @@ program sync_mpi
    
     call MPI_FINALIZE(ierr)
 end program sync_mpi
-
-
-subroutine output
 
 
 
