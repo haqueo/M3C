@@ -2,7 +2,40 @@
 
 Final M3C Project 2016
 
-### Who do I talk to? ###
+
+
+
+### PART 1 ###
+
+Build.sh - 
+
+
+
+
+### PART 2 ###
+
+
+
+
+### PART 3 ###
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Contact ###
 
 Omar Haque
 email: omar.haque14@imperial.ac.uk
