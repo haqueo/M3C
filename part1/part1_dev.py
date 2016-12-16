@@ -50,27 +50,21 @@ def analyze_rnet(Ntime, m, X0, N0, L, Nt, display):
     #t1 = time.time()
     
     #SECOND TRY AT F
+    
     FsecondPrime = np.zeros((Ntime+1,N0+Nt))
-    tan = time.time()
+   
     for i in range(Ntime+1):
         n = np.bincount(X[i,:])[1:]/float(m)
         FsecondPrime[i,:len(n)] = n
     
-    print Fprime[:,0]
-    print FsecondPrime[:,0]
-    tam = time.time()
+    #print Fprime[:,0]
     
     
-    print "rwmodule time is %f" % (t3-t2)
-    print "making F time is %f" % (t1-t0)
-    print "second making F time is %f" % (tam-tan)
-    
-    tkeval = time.time()
     if display == True:
         time2 = range(1,Ntime+2)
         maxArray = np.zeros(Ntime+1)
         for i in range(Ntime+1):
-            maxArray[i] = int(np.argmax(Fprime[i,:])+1)
+            maxArray[i] = int(np.argmax(FsecondPrime[i,:])+1)
         
         plt.figure()
         plt.xlabel('t')
@@ -79,10 +73,8 @@ def analyze_rnet(Ntime, m, X0, N0, L, Nt, display):
         plt.xlim([0,Ntime+2])
         plt.scatter(time2,maxArray)
         plt.show()
-    tnassim = time.time()
-    print "time plotting is %f" % (tnassim-tkeval)
-    
-    return Fprime
+   
+    return FsecondPrime
             
     
  
@@ -94,35 +86,61 @@ def convergence_rnet(Ntime, m, X0, N0, L, Nt, display):
     m: number of walks
     X0: initial node, (node with maximum degree if X0=0)
     N0,L,Nt: recursive network parameters
+    
+    Plots a graph of m against the assosciated F(Ntime,X0)
+    For large m, we can see how F(Ntime,X0) tails out and converges
+    to a single value
+    (but it takes a long time to run)
+    
     """
     
+    
+    #Draws a graph of m against F(Ntime,X0)
     Fprime = analyze_rnet(Ntime,m,X0,N0,L,Nt,False)
     #F = F[Ntime,X0]
     F = Fprime[Ntime-1,X0-1]
     
     Fprimevals = np.zeros(m)
     for i in range(1,m+1):
-        Fprime = analyze_rnet(Ntime,i,X0,N0,L,Nt,False)
-        F = Fprime[Ntime-1,X0-1]
-        Fprimevals[i-1] = F
+        if (i % 10) == 0:
+            
+            Fprime = analyze_rnet(Ntime,i,X0,N0,L,Nt,False)
+            F = Fprime[Ntime-1,X0-1]
+            if F == float(0):
+                Fprimevals[i-1] = float('nan')
+            else:
+                Fprimevals[i-1] = F
+    
+    
     
     plt.figure()
-    plt.plot(range(m),Fprimevals)
+    plt.title('Variation of F(Ntime,X0) on m')
+    plt.xlabel('m')
+    
+    plt.scatter(range(m),Fprimevals)
+    plt.ylabel('F(Ntime,X0)')
     plt.show()
     	
 
 
 if __name__ == '__main__':
     # add code here to call functions and generate figures
-    #Ntime,m,X0,N0,L,Nt,display = (100,500,0,5,2,5,True)
-    N0,L,Nt = (5,2,200)
     
-    #convergence_rnet(Ntime,m,X0,N0,L,Nt,display)
-    Ntime,m = 100,10
+    #FIRST GRAPH
+    #N0,L,Nt = (5,2,200)
+    #Ntime,m = 100000,1000
+    #X0 = 0
+    #display = True
+    #analyze_rnet(Ntime,m,X0,N0,L,Nt,display)
+    
+    #SECOND GRAPH
+    N0,L,Nt = (5,2,200)
+    Ntime,m = 100000,500
     X0 = 0
     display = True
-#    convergence_rnet(Ntime,m,X0,N0,L,Nt,display)    
-    analyze_rnet(Ntime,m,X0,N0,L,Nt,True)
-    #second part
+    convergence_rnet(Ntime,m,X0,N0,L,Nt,display)
+    
+    
+    
     
     
