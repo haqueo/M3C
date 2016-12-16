@@ -23,17 +23,23 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,P,dy)
     integer :: i1
     real(kind=8) :: b
     real(kind=8), dimension(n) :: S,E,C
+    real(kind=8), dimension(n) :: dS,dE,dC
     
+    !print *, "n is", n
+    !print *, "y is", y
+    !print *, "t,a,b0,b1 is", t,a,b0,b1
+    !print *, "g,k,w is", g,k,w
+    !print *, "P is", P
     
     
     
     S = y(1:n) ! S(i) = y(i)
     E = y(n+1:2*n) ! E(i) = y(i+N)
-    C = y((2*n)+1:3*n) 
+    C = y(2*n+1:3*n) 
     ! C(i) = y(i+(2*N))
     
-    b = b0 + (b1*(1.d0+cos(dble(8)*atan(dble(1))*t)))
-    
+    b = b0 + b1*(1+cos(dble(8)*atan(dble(1))*t))
+
     !S[:] = y(1:n)
     !E[:] = y(n+1:2*n)
     !C[:] = y((2*n)+1:3*n)
@@ -41,11 +47,21 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,P,dy)
     
     
     DO i1 = 1,N
-        dy(i1) = (k*(1-S(i1))) - (S(i1)*(b*C(i1)+w))+(w*(dot_product(y(1:n),P(i1,:))))
-        dy(i1+N) = (b*y(i1+(2*N))*y(i1)) - (y(i1+N)*(k+a+w))+(w*(dot_product(y(n+1:2*n),P(i1,:)))) 
-        dy(i1+(2*N)) = (a*y(i1+N))-(y(i1+(2*N))*(g+k+w))+(w*(dot_product(y(2*n+1:3*n),P(i1,:))))
+        !dy(i1) = (k*(1-S(i1))) - (S(i1)*(b*C(i1)))+(w*(dot_product(P(i1,:),S)))-w*S(i1) ! this doesnt work
+        !!DONT USE dy(i1+N) = (b*C(i1)*S(i1)) - (E(i1)*(k+a))+(w*(dot_product(E,P(i1,:)))) - w*E(i1)
+        !dy(i1+N) = b*C(i1)*S(i1)-(k+a)*E(i1)+w*dot_product(P(i1,:),E)-w*E(i1) !only E works
+        !!DONT USE dy(i1+(2*N)) = (a*E(i1))-(C(i1)*(g+k))+(w*(dot_product(C,P(i1,:)))) - w*C(i1)
+        !dy(i1+2*N) = a*E(i1) - (g+k)*C(i1) + w*dot_product(P(i1,:),C)-w*C(i1) ! this doesnt work
         
+        dS(i1) = (k*(1-S(i1))) - (S(i1)*(b*C(i1)))+(w*(dot_product(P(i1,:),S)))-w*S(i1)
+        dE(i1) = b*C(i1)*S(i1)-(k+a)*E(i1)+w*dot_product(P(i1,:),E)-w*E(i1)
+        dC(i1) = a*E(i1) - (g+k)*C(i1) + w*dot_product(P(i1,:),C)-w*C(i1)
+       
     END DO
+    
+    dy(1:n) = ds(1:n)
+    dy(n+1:2*n) = de(1:n)
+    dy(2*n+1:3*n) = dc(1:n)
     !... the column with the initial values is messed up
     
     !2nd, 5th and 8th columns work

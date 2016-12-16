@@ -29,7 +29,7 @@ def initialize(N0,L,Nt,pflag):
     InitialConditions = np.zeros((3*N,1)) #It is 3Nx1
     InitialConditions[:N,0] = float(1) #first N are all 1, rest are 0
     #apart from the infected node:
-    InitialConditions[InfectedNode,0] = 0.1
+    InitialConditions[InfectedNode,0] = float(0.1)
     InitialConditions[InfectedNode+N,0] = 0.05
     InitialConditions[InfectedNode+2*N,0] = 0.05
     
@@ -37,12 +37,16 @@ def initialize(N0,L,Nt,pflag):
     
     if pflag == True:
         #find the adjacency matrix, A
-        A = net.adjacency_matrix(N,enet)
+        A = net.adjacency_matrix(N0+Nt,enet)
         
         P = np.zeros((N,N))
+        
+        scalar = np.dot(qnet,A).astype(float)
+        #for i in range(N):
+        #    for j in range(N):
+        #        P[i,j] = float(qnet[i]*A[i,j])/float(np.dot(qnet,A[:,j]))
         for i in range(N):
-            for j in range(N):
-                P[i,j] = float(qnet[i]*A[i,j])/float(np.dot(qnet,A[:,j]))
+            P[i,:] = (float(qnet[i])*A[i,:].astype(float))/scalar
                 
         return InitialConditions, InfectedNode, P
         
@@ -73,7 +77,7 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
     InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
     
     #Initialise the time
-    tprime=np.linspace(0.0,T,Ntime)
+    tprime = np.linspace(float(0),T,Ntime)
    
     
     
@@ -88,9 +92,6 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         #Split initial conditions into S,E,C
         
         
-        #S[:] = y[0:N]
-        #E[:] = y[N:2*N]
-        #C[:] = y[2*N:3*N]
         
         
         #beta (b) definition
@@ -106,13 +107,25 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         #
         #
         dyprime = np.zeros((3*N,1))
+        S = np.zeros(N)
+        E = np.zeros(N)
+        C = np.zeros(N)
+        S[:] = y[0:N]
+        E[:] = y[N:2*N]
+        C[:] = y[2*N:3*N]
+        
+        
         
         for i in range(N):
             
-            dyprime[i,0] = k*(1-y[i])- y[i]*((b*y[(2*N)+i])+w)+(w*(np.dot(y[0:N],P[i,:])))
+            #dyprime[i,0] = k*(1-y[i])- y[i]*((b*y[(2*N)+i])+w)+(w*(np.dot(y[0:N],P[i,:])))
+            dyprime[i,0] = k*(1-S[i]) - b*C[i]*S[i] + w*np.dot(P[i,:],S) - w*S[i]
             dyprime[i+N,0] = (b*y[(2*N)+i]*y[i]) - y[N+i]*(k+a+w)+(w*(np.dot(y[N:2*N],P[i,:]))) 
             dyprime[i+(2*N),0] = (a*y[N+i])-(y[(2*N)+i]*(g+k+w))+(w*(np.dot(y[2*N:3*N],P[i,:])))
             
+        
+        
+        
         
         return dyprime[:,0]
     #def RHSnet(y,t,a,b0,b1,g,k,w,N,initialConditions,P):
@@ -145,8 +158,9 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
        
         #!rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
-        dy = fn.rhs(InitialConditions,t,a,b0,b1,g,k,w,P,N)
+        dy = fn.rhs(y,t,a,b0,b1,g,k,w,P,N)
         #for some reason, this takes N as the last value?!
+        
         return dy
         
         
@@ -208,7 +222,8 @@ if __name__ == '__main__':
    #InitialConditions, InfectedNode, P = initialize(5,2,3,True)
    #print(InitialConditions)
    #print(InfectedNode)
-   S,E,C = solveFluNet(2,10,2,3,4,3,2,1,1,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
-   print(E)
+   S,E,C = solveFluNet(10,10,a,b0,b1,g,k,w,10,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
+   print(C)
+   
 
    
