@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from n1 import network as net
 from p1 import flunet as fn
-from time import clock,time
+
 
 
 def initialize(N0,L,Nt,pflag):
@@ -73,7 +73,8 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
     InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
     
     #Initialise the time
-    t=np.linspace(0,T,Ntime)
+    tprime=np.linspace(0.0,T,Ntime)
+   
     
     
     #add input variables to RHS functions if needed
@@ -85,15 +86,17 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
         #y is really the initial condition, this needs to change
         #Split initial conditions into S,E,C
-        S = y[0:N]
-        E = y[N:2*N]
-        C = y[(2*N):3*N]
+        
+        
+        #S[:] = y[0:N]
+        #E[:] = y[N:2*N]
+        #C[:] = y[2*N:3*N]
         
         
         #beta (b) definition
-        b = b0 + b1*(1.0+np.cos(2.0*np.pi*t))
+        b = b0 + (b1*(float(1)+np.cos(2.0*(np.pi)*float(t))))
         
-        
+    
         #Here I have expanded the sum within dS/dt, dE/dt and dC/dt given,
         # and used the fact that the sum of Pij over i = 1
         #
@@ -103,11 +106,12 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         #
         #
         dyprime = np.zeros((3*N,1))
+        
         for i in range(N):
             
-            dyprime[i,0] = k*(1-S[i])- S[i]*((b*C[i])+w)+(w*(np.dot(S[:],P[:,i])))
-            dyprime[i+N,0] = (b*C[i]*S[i]) - E[i]*(k+a+w)+(w*(np.dot(E[:],P[:,i]))) 
-            dyprime[i+(2*N),0] = (a*E[i])-(C[i]*(g+k+w))+(w*(np.dot(C[:],P[:,i])))
+            dyprime[i,0] = k*(1-y[i])- y[i]*((b*y[(2*N)+i])+w)+(w*(np.dot(y[0:N],P[i,:])))
+            dyprime[i+N,0] = (b*y[(2*N)+i]*y[i]) - y[N+i]*(k+a+w)+(w*(np.dot(y[N:2*N],P[i,:]))) 
+            dyprime[i+(2*N),0] = (a*y[N+i])-(y[(2*N)+i]*(g+k+w))+(w*(np.dot(y[2*N:3*N],P[i,:])))
             
         
         return dyprime[:,0]
@@ -143,10 +147,11 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         #!rhs(n,y,t,a,b0,b1,g,k,w,dy,qnet,Anet)
         dy = fn.rhs(InitialConditions,t,a,b0,b1,g,k,w,P,N)
         #for some reason, this takes N as the last value?!
-        
         return dy
         
-    Y = odeint(RHSnet,InitialConditions[:,0],t,args=(a,b0,b1,g,k,w,N,P)) 
+        
+    
+    Y = odeint(RHSnetF,InitialConditions[:,0],tprime,args=(a,b0,b1,g,k,w,N,P)) 
     return Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
     
     def RHSnetFomp(y,t,a,b0,b1,g,k,w):
@@ -173,6 +178,10 @@ def analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=False):
            threshold: use to compute  Nmax
            warray: contains values of omega
     """
+    
+    
+    
+    
 
     return Cmax,Tmax,Nmax
     
@@ -195,9 +204,11 @@ def performance():
 
 if __name__ == '__main__':            
    a,b0,b1,g,k,w = 45.6,750.0,0.5,73.0,1.0,0.1
+   
    #InitialConditions, InfectedNode, P = initialize(5,2,3,True)
    #print(InitialConditions)
    #print(InfectedNode)
-   S,E,C = solveFluNet(10,11,2,3,4,3,2,1,1,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
-   print(C)
+   S,E,C = solveFluNet(2,10,2,3,4,3,2,1,1,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
+   print(E)
+
    

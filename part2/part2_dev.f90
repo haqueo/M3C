@@ -20,7 +20,7 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,P,dy)
     real(kind=8), intent(in) :: t,a,b0,b1,g,k,w
     real(kind=8), dimension(n,n), intent(in) :: P
     real(kind=8), dimension(3*n), intent(out) :: dy
-    integer :: i
+    integer :: i1
     real(kind=8) :: b
     real(kind=8), dimension(n) :: S,E,C
     
@@ -32,20 +32,23 @@ subroutine rhs(n,y,t,a,b0,b1,g,k,w,P,dy)
     C = y((2*n)+1:3*n) 
     ! C(i) = y(i+(2*N))
     
-    b = b0 + b1*(1.d0+cos(2.0*4.0*atan(1.0)*t))
+    b = b0 + (b1*(1.d0+cos(dble(8)*atan(dble(1))*t)))
+    
     !S[:] = y(1:n)
     !E[:] = y(n+1:2*n)
     !C[:] = y((2*n)+1:3*n)
     
     
-    print *, ""
     
-    DO i = 1,N
-        dy(i) = k*(1-y(i)) - y(i)*((b*y(i+(2*N)))+w)+(w*(dot_product(y(1:n),P(:,i))))
-        dy(i+N) = (b*y(i+(2*N))*y(i)) - y(i+N)*(k+a+w)+(w*(dot_product(y(n+1:2*n),P(:,i)))) 
-        dy(i+(2*N)) = (a*y(i+N))-(y(i+(2*N))*(g+k+w))+(w*(dot_product(y((2*n)+1:3*n),P(:,i))))
+    DO i1 = 1,N
+        dy(i1) = (k*(1-S(i1))) - (S(i1)*(b*C(i1)+w))+(w*(dot_product(y(1:n),P(i1,:))))
+        dy(i1+N) = (b*y(i1+(2*N))*y(i1)) - (y(i1+N)*(k+a+w))+(w*(dot_product(y(n+1:2*n),P(i1,:)))) 
+        dy(i1+(2*N)) = (a*y(i1+N))-(y(i1+(2*N))*(g+k+w))+(w*(dot_product(y(2*n+1:3*n),P(i1,:))))
+        
     END DO
+    !... the column with the initial values is messed up
     
+    !2nd, 5th and 8th columns work
     !need use P values without creating an NxN matrix
     
     
