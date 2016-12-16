@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from n1 import network as net
 from p1 import flunet as fn
-
+import time
 
 
 def initialize(N0,L,Nt,pflag):
@@ -48,9 +48,9 @@ def initialize(N0,L,Nt,pflag):
         for i in range(N):
             P[i,:] = (float(qnet[i])*A[i,:].astype(float))/scalar
                 
-        return InitialConditions, InfectedNode, P
+        return InitialConditions[:,0], InfectedNode, P
         
-    return InitialConditions, InfectedNode
+    return InitialConditions[:,0], InfectedNode
         
 
 
@@ -58,7 +58,7 @@ def initialize(N0,L,Nt,pflag):
 
 
     
-def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
+def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt,P,verFlag):
     """Simulate network flu model at Ntime equispaced times
     between 0 and T (inclusive). Add additional input variables
     as needed clearly commenting what they are and how they are  
@@ -68,17 +68,11 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         used to calculate RHS
         N0 - initial number of nodes 
         L - number of links added at each timestep
-        Nt - total number of timesteps 
+        Nt - total number of timesteps
+        verFlag - tells you which version of RHS to use
+                - "python", "fortran", "omp"
     """
-    #there are N0+Nt nodes in total
-    N = N0+Nt
     
-    #Get the initial conditions
-    InitialConditions,InfectedNode,P = initialize(N0,L,Nt,True)
-    
-    #Initialise the time
-    tprime = np.linspace(float(0),T,Ntime)
-   
     
     
     #add input variables to RHS functions if needed
@@ -165,22 +159,43 @@ def solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
         
         
     
-    Y = odeint(RHSnetF,InitialConditions[:,0],tprime,args=(a,b0,b1,g,k,w,N,P)) 
-    return Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
     
-    def RHSnetFomp(y,t,a,b0,b1,g,k,w):
+    
+    def RHSnetFomp(y,t,a,b0,b1,g,k,w,N,P):
         """RHS used by odeint to solve Flu model
         Calculations carried out by fn.rhs_omp
         """
-
+        dy = fn.rhs_omp(y,t,a,b0,b1,g,k,w,P,2,N)
         return dy
-
+        
+        
+    #there are N0+Nt nodes in total
+    N = N0+Nt
+    
+    #Get the initial conditions
+    
+    
+    #Initialise the time
+    tprime = np.linspace(float(0),T,Ntime)
+   
+   
+    
     #Add code here and to RHS functions above to simulate network flu model
 
-    return t,S,E,C
+    if (verFlag == 'python'):
+        Y = odeint(RHSnet,y0,tprime,args=(a,b0,b1,g,k,w,N,P)) 
+        return tprime, Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
+      
     
-
-
+    elif (verFlag == 'fortran'):
+        Y = odeint(RHSnetF,y0,tprime,args=(a,b0,b1,g,k,w,N,P)) 
+        return tprime, Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
+       
+    
+    elif (verFlag == 'omp'):
+        Y = odeint(RHSnetFomp,y0,tprime,args=(a,b0,b1,g,k,w,N,P)) 
+        return tprime, Y[:,0:N],Y[:,N:2*N],Y[:,(2*N):3*N]
+        
 
 def analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=False):
     """analyze influence of omega on: 
@@ -193,11 +208,63 @@ def analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=False):
            warray: contains values of omega
     """
     
+    Wlen = len(warray)
+    Cmaxarray = np.zeros((Wlen,1))
+    Tmaxarray = np.zeros((Wlen,1))
+    Nmaxarray = np.zeros((Wlen,1))
+    InitialConditions, InfectedNode, P = initialize(N0,L,Nt,True)
+    N = N0+Nt
     
+    
+    for i in range(Wlen):
+        
+        #FOR EVERY W, SOLVE FLU NET 
+        t,S,E,C = solveFluNet(T,Ntime,a,b0,b1,g,k,warray[i],InitialConditions,N0,L,Nt,P,'omp')
+        
+        Tmaxarray[i,0] = t[np.argmax(C,0)[0]]
+        
+        arrayNs = np.zeros((Ntime,1))
+        
+        for j in range(Ntime):
+            
+            #TAKE VALUES OF C OVER THRESHOLD
+            arrayNs[j,0] = (C[j,:] > threshold).sum()
+            
+            #FIND MAX X
+            Cmaxarray[i] = np.amax(C)
+            
+            #NUMBER OF Cs over THRESHOLD
+            Nmaxarray[i] = max(arrayNs)/float(N)
+            
+    if display == True:
+        
+        plt.figure()
+        plt.title('Omar Haque, analyze. Graph of Nmax against w')
+        plt.xlabel('w')
+        plt.ylabel('Nmax')
+        plt.plot(warray,Nmaxarray)
+        plt.show()
+        
+        plt.figure()
+        plt.title('Omar Haque, analyze. Graph of Cmax against w')
+        plt.xlabel('w')
+        plt.ylabel('Cmax')
+        plt.plot(warray,Cmaxarray)
+        plt.show()
+        
+        
+        plt.figure()
+        plt.title('Omar Haque, analyze. Graph of Tmax against w')
+        plt.xlabel('w')
+        plt.ylabel('Tmax')
+        plt.plot(warray,Tmaxarray)
+        plt.show()
+        
+
     
     
 
-    return Cmax,Tmax,Nmax
+    return Cmaxarray,Tmaxarray,Nmaxarray
     
 
 def visualize(enet,C,threshold):
@@ -208,22 +275,87 @@ def visualize(enet,C,threshold):
     return None
 
 
-def performance():
+def performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w):
     """function to analyze performance of python, fortran, and fortran+omp approaches
         Add input variables as needed, add comment clearly describing the functionality
         of this function including figures that are generated and trends shown in figures
         that you have submitted
     """
+    N = N0+Nt
+    
+    Nvalues = np.arange((N))
+    pythonTimes = np.zeros(N)
+    fortranTimes = np.zeros(N)
+    openMPTimes = np.zeros(N)
+    
+    for i in Nvalues:
+        
+        #Generate initial values
+        
+        InitialConditions, InfectedNode, P = initialize(N0,L,Nvalues[i],True)    
+        pythonTime1 = time.time()
+        #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt,P,verFlag):
+        solveFluNet(T,Ntime,a,b0,b1,g,k,w,InitialConditions,N0,L,Nvalues[i],P,'python')
+        pythonTime2 = time.time()
+        
+        fortranTime1 = time.time()
+        solveFluNet(T,Ntime,a,b0,b1,g,k,w,InitialConditions,N0,L,Nvalues[i],P,'fortran')
+        fortranTime2 = time.time()
+        
+        openMPtime1 = time.time()
+        solveFluNet(T,Ntime,a,b0,b1,g,k,w,InitialConditions,N0,L,Nvalues[i],P,'omp')
+        openMPtime2 = time.time()
+        #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt,verFlag):
+        
+        pythonTimes[i] = pythonTime2-pythonTime1
+        fortranTimes[i] = fortranTime2-fortranTime1
+        openMPTimes[i] = openMPtime2-openMPtime1
+        
+        
+    plt.figure()
+    plt.title('Omar Haque, performance. Comparison of different RHS methods')
+    plt.plot(Nvalues,pythonTimes,label='RHS from python')
+    plt.plot(Nvalues,fortranTimes,label='RHS from fortran')
+    plt.plot(Nvalues, openMPTimes,label='RHS using openMP')
+    plt.xlabel('Nt')
+    plt.ylabel('time taken for solveFluNet()')
+    plt.legend(loc = 'best')
+    plt.show()
+    
+    plt.figure()
+    plt.title('Omar Haque, performance. Comparison of Fortran vs Fortran+OpenMP (logplot)')
+    plt.plot(np.log(Nvalues),np.log(fortranTimes),label='RHS from fortran')
+    plt.plot(np.log(Nvalues), np.log(openMPTimes),label='RHS using openMP')
+    plt.xlabel('log(Nt)')
+    plt.ylabel('log(time taken for solveFluNet)')
+    plt.legend(loc = 'best')
+    plt.show()
+        
+        #initialize(N0,L,Nt,pflag):
+        
+    
+    
 
 
 if __name__ == '__main__':            
    a,b0,b1,g,k,w = 45.6,750.0,0.5,73.0,1.0,0.1
    
-   #InitialConditions, InfectedNode, P = initialize(5,2,3,True)
+   InitialConditions, InfectedNode, P = initialize(5,3,3,True)
    #print(InitialConditions)
    #print(InfectedNode)
-   S,E,C = solveFluNet(10,10,a,b0,b1,g,k,w,10,5,3,3) #solveFluNet(T,Ntime,a,b0,b1,g,k,w,y0,N0,L,Nt):
-   print(C)
+   
+   
+   
+   # t,S,E,C = solveFluNet(10,10,a,b0,b1,g,k,w,InitialConditions,5,3,3,P,'python') 
+
+   N0,L,Nt = 5,2,200
+   T = 2
+   threshold = 0.1
+   #use Nt = 200 for performance
+   Ntime = 1000
+   warray = [0,np.power(10,-2),0.1,0.2,0.5,1.0]
+   #analyze(N0,L,Nt,T,Ntime,a,b0,b1,g,k,threshold,warray,display=True)
+   performance(N0,L,Nt,T,Ntime,a,b0,b1,g,k,w)
    
 
    
