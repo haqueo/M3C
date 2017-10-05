@@ -1,6 +1,10 @@
 ### What is this repository for? ###
 
-Final M3C Project 2016
+My submission for the final M3C project 2016
+
+This is a study of network traversal problems under the Erdos Renyi model. I used Python for data analysis, and the F2Py module to compute the backend processes in Fortran. I also used OpenMP to parallelise the processes and studied performance differences.
+
+Unfortunately I don't have the questions stored as they were on a temporary website, but hopefully the files make sense.
 
 I have kept all of my working files in 'OtherFilesUsed'
 
@@ -44,14 +48,6 @@ part3_dev.py - dev version of part3_dev.py
 
 #Rest
 part3.py,part31.f90 as described by question
-
-
-
-
-
-
-
-
 
 
 
